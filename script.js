@@ -31,13 +31,51 @@ const markerCluster = L.markerClusterGroup({
 });
 map.addLayer(markerCluster);
 
-L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-  {
+
+const basemapStyles = {
+  street: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
     attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012",
+      "Tiles © Esri — Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012",
   },
-).addTo(map);
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles © Esri — Source: Esri, DigitalGlobe, GeoEye, i-cubed, Earthstar Geographics",
+  },
+  topo: {
+    url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution:
+      "Map data © OpenStreetMap contributors, SRTM | Map style © OpenTopoMap (CC-BY-SA)",
+    subdomains: ["a", "b", "c"],
+  },
+  light: {
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+    attribution: "&copy; OpenStreetMap contributors & CARTO",
+    subdomains: ["a", "b", "c", "d"],
+  },
+};
+let currentTileLayer = null;
+
+function setBasemap(style = "street") {
+  const config = basemapStyles[style] || basemapStyles.street;
+  if (currentTileLayer) map.removeLayer(currentTileLayer);
+  currentTileLayer = L.tileLayer(config.url, {
+    attribution: config.attribution,
+    subdomains: config.subdomains || "abc",
+  }).addTo(map);
+}
+
+function changeBasemap(style) {
+  setBasemap(style);
+}
+
+setBasemap("street");
+
+
+
+
+
+
 
 // Direct Nominatim geocoding — no library wrapper needed
 async function nominatimGeocode(query) {
@@ -65,6 +103,7 @@ async function nominatimGeocode(query) {
 
 // ── State ──────────────────────────────────────────────────────
 let locations = [];
+let allFields = [];   // all CSV column headers, used for service detail lookup
 let markers = [];
 let centerPoint = null;
 let radiusCircle = null;
@@ -88,6 +127,19 @@ kwDropdown.className = "sugg-dropdown";
 kwDropdown.style.display = "none";
 document.body.appendChild(kwDropdown);
 
+const els = {
+  searchKeyword: document.getElementById("search-keyword"),
+  searchLocation: document.getElementById("search-location"),
+  radius: document.getElementById("radius"),
+  radiusValue: document.getElementById("radiusValue"),
+  resultCount: document.getElementById("resultCount"),
+  locationList: document.getElementById("locationList"),
+  panelFilters: document.getElementById("panel-filters"),
+  panelResults: document.getElementById("panel-results"),
+  tabFilters: document.getElementById("tab-filters"),
+  tabResults: document.getElementById("tab-results"),
+};
+
 // ── Haversine ──────────────────────────────────────────────────
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 3958.8;
@@ -107,6 +159,7 @@ Papa.parse(SHEET_URL, {
   header: true,
   skipEmptyLines: true,
   complete(results) {
+    allFields = results.meta.fields || [];
     locations = results.data
       .map((r) => ({
         name: (r.Organization_Name || "").trim(),
@@ -121,10 +174,13 @@ Papa.parse(SHEET_URL, {
         services_offered_raw: (r.Services_Offered || "").trim(),
         locations_served: (r.Locations_Served || "").toLowerCase().trim(),
         locations_served_raw: (r.Locations_Served || "").trim(),
-        days: (r.Grocery_Distribution || "").trim(),
         parent_org: (r.Parent_Organization || "").trim(),
+        rawRow: r,  // keep entire row for per-service column lookups
       }))
       .filter((l) => !isNaN(l.lat) && !isNaN(l.lng));
+    locations.forEach((l) => {
+      l.serviceDays = getServiceDays(l);
+    });
     buildServiceFilters();
     buildAreasFilter();
     buildParentOrgFilter();
@@ -140,6 +196,65 @@ Papa.parse(SHEET_URL, {
 // ── Shared: case-insensitive dedup helper ─────────────────────
 // Given an array of raw strings (possibly comma/semicolon-separated),
 // returns sorted unique values preserving the first-seen casing.
+function normalizeFieldKey(str) {
+  return String(str)
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, " ")
+    .replace(/[^a-z0-9 ]/g, "");
+}
+
+function extractDaysFromText(text) {
+  const days = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  const normalized = String(text).toLowerCase();
+  return days.filter((day) => normalized.includes(day));
+}
+
+function findServiceField(service, fieldMap) {
+  const normalizedService = normalizeFieldKey(service);
+  if (fieldMap.has(normalizedService)) return fieldMap.get(normalizedService);
+
+  const serviceTerms = normalizedService.split(" ").filter(Boolean);
+  for (const [fieldKey, fieldName] of fieldMap.entries()) {
+    if (serviceTerms.every((term) => fieldKey.includes(term))) return fieldName;
+  }
+
+  for (const [fieldKey, fieldName] of fieldMap.entries()) {
+    if (normalizedService.includes(fieldKey) || fieldKey.includes(normalizedService)) return fieldName;
+  }
+
+  return undefined;
+}
+
+function getServiceDays(loc) {
+  if (!loc.services_offered_raw || !loc.rawRow) return [];
+  const services = loc.services_offered_raw
+    .split(/[,;]/)
+    .map((s) => s.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+
+  const fieldMap = new Map();
+  allFields.forEach((f) => fieldMap.set(normalizeFieldKey(f), f));
+
+  const daySet = new Set();
+  services.forEach((service) => {
+    const matchingField = findServiceField(service, fieldMap);
+    if (!matchingField) return;
+    const detailText = String(loc.rawRow[matchingField] || "");
+    extractDaysFromText(detailText).forEach((day) => daySet.add(day));
+  });
+
+  return [...daySet];
+}
+
 function uniqueValues(rawList) {
   const seen = new Map(); // normalized lowercase key → preferred casing
   rawList.forEach((raw) => {
@@ -204,7 +319,7 @@ function buildParentOrgFilter() {
 // ── Suggestions helpers ────────────────────────────────────────
 
 function positionDropdown() {
-  const input = document.getElementById("search-location");
+  const input = els.searchLocation;
   const rect = input.getBoundingClientRect();
   dropdown.style.position = "fixed";
   dropdown.style.top = rect.bottom + 4 + "px";
@@ -224,7 +339,7 @@ function hideKeywordSuggestions() {
 }
 
 function positionKeywordDropdown() {
-  const input = document.getElementById("search-keyword");
+  const input = els.searchKeyword;
   const rect = input.getBoundingClientRect();
   kwDropdown.style.position = "fixed";
   kwDropdown.style.top = rect.bottom + 4 + "px";
@@ -251,7 +366,7 @@ function renderKeywordSuggestions(orgs) {
       `<span class="sugg-addr">${escHtml(loc.address)}</span></span>`;
     item.addEventListener("mousedown", (e) => {
       e.preventDefault();
-      document.getElementById("search-keyword").value = loc.name;
+      els.searchKeyword.value = loc.name;
       hideKeywordSuggestions();
       applyFilters();
       // Fly to and open this org's marker
@@ -341,7 +456,7 @@ function renderSuggestions(locResults, orgResults) {
 
 function pickLocation(result) {
   centerPoint = L.latLng(result.center.lat, result.center.lng);
-  document.getElementById("search-location").value = result.name;
+  els.searchLocation.value = result.name;
   hideSuggestions();
   map.setView(centerPoint, 13);
   if (userMarker) map.removeLayer(userMarker);
@@ -370,7 +485,7 @@ function pickLocation(result) {
 }
 
 function pickOrg(loc) {
-  document.getElementById("search-location").value = loc.name;
+  els.searchLocation.value = loc.name;
   hideSuggestions();
   map.flyTo([loc.lat, loc.lng], 15, { duration: 0.8 });
   setTimeout(() => {
@@ -408,7 +523,7 @@ function handleLocationKeydown(e) {
     } else {
       // Plain Enter — geocode the raw typed value
       hideSuggestions();
-      const q = document.getElementById("search-location").value.trim();
+      const q = els.searchLocation.value.trim();
       if (q) {
         nominatimGeocode(q).then((results) => {
           if (results.length > 0) {
@@ -468,7 +583,7 @@ function updateAccordionBadges() {
 
 // ── Filters ────────────────────────────────────────────────────
 function applyFilters() {
-  const term = document.getElementById("search-keyword").value.toLowerCase().trim();
+  const term = els.searchKeyword.value.toLowerCase().trim();
   const radius = parseFloat(document.getElementById("radius").value);
   const checkedServs = [...document.querySelectorAll(".service-filter:checked")].map((cb) => cb.value);
   const checkedDays = [...document.querySelectorAll(".dayFilter:checked")].map((cb) => cb.value);
@@ -487,8 +602,14 @@ function applyFilters() {
     if (checkedServs.length && !checkedServs.some((s) => l.services_offered.includes(s.toLowerCase())))
       return false;
 
-    if (checkedDays.length && !checkedDays.some((d) => l.days.toLowerCase().includes(d.toLowerCase())))
-      return false;
+    if (checkedDays.length) {
+      const serviceDays = l.serviceDays || [];
+      const dayMatch = checkedDays.some((d) =>
+        serviceDays.some((serviceDay) => serviceDay.toLowerCase() === d.toLowerCase()) ||
+        (l.days && l.days.toLowerCase().includes(d.toLowerCase()))
+      );
+      if (!dayMatch) return false;
+    }
 
     if (checkedLocs.length && !checkedLocs.some((loc) => l.locations_served.includes(loc.toLowerCase())))
       return false;
@@ -524,10 +645,10 @@ function applyFilters() {
 
 // ── Reset ──────────────────────────────────────────────────────
 function resetFilters() {
-  document.getElementById("search-keyword").value = "";
-  document.getElementById("search-location").value = "";
-  document.getElementById("radius").value = 0;
-  document.getElementById("radiusValue").textContent = 0;
+  els.searchKeyword.value = "";
+  els.searchLocation.value = "";
+  els.radius.value = 0;
+  els.radiusValue.textContent = 0;
   document.querySelectorAll(".service-filter, .dayFilter, .locationFilter, .parentOrgFilter").forEach((cb) => (cb.checked = false));
   centerPoint = null;
   hideSuggestions();
@@ -539,10 +660,45 @@ function resetFilters() {
 
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.getElementById("panel-filters").style.display = tab === "filters" ? "flex" : "none";
-  document.getElementById("panel-results").style.display = tab === "results" ? "flex" : "none";
-  document.getElementById("tab-filters").classList.toggle("active", tab === "filters");
-  document.getElementById("tab-results").classList.toggle("active", tab === "results");
+  els.panelFilters.style.display = tab === "filters" ? "flex" : "none";
+  els.panelResults.style.display = tab === "results" ? "flex" : "none";
+  els.tabFilters.classList.toggle("active", tab === "filters");
+  els.tabResults.classList.toggle("active", tab === "results");
+}
+
+// ── Service detail renderer ────────────────────────────────────
+// Splits Services_Offered into individual services, looks up each one
+// as a column header in the spreadsheet, and builds subheader + body HTML.
+function buildServiceDetails(loc) {
+  if (!loc.services_offered_raw) return "";
+
+  const services = loc.services_offered_raw
+    .split(/[,;]/)
+    .map((s) => s.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+
+  if (!services.length) return "";
+
+  // Build a normalized lookup map: service label → original field name
+  const fieldMap = new Map();
+  allFields.forEach((f) => fieldMap.set(normalizeFieldKey(f), f));
+
+  let html = `<div class="popup-section popup-services"><strong>🛠 Services</strong>`;
+
+  services.forEach((service) => {
+    const matchingField = findServiceField(service, fieldMap);
+    const detail = matchingField ? (loc.rawRow[matchingField] || "").trim() : "";
+
+    html += `<div class="service-block">`;
+    html += `<div class="service-subheader">${escHtml(service)}</div>`;
+    if (detail) {
+      html += `<div class="service-detail">${escHtml(detail)}</div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  return html;
 }
 
 // ── Render locations ──────────────────────────────────────────
@@ -550,10 +706,10 @@ function renderLocations(data) {
   markerCluster.clearLayers();
   markers = [];
 
-  const list = document.getElementById("locationList");
+  const list = els.locationList;
   list.innerHTML = "";
 
-  document.getElementById("resultCount").textContent = data.length === 0 ? "0" : `${data.length}`;
+  els.resultCount.textContent = data.length === 0 ? "0" : `${data.length}`;
 
   if (data.length === 0) {
     list.innerHTML =
@@ -584,10 +740,8 @@ function renderLocations(data) {
           ${loc.phone ? `<div class="popup-section"><strong>📞 Phone</strong>${escHtml(loc.phone)}</div>` : ""}
           ${loc.parent_org ? `<div class="popup-section"><strong>🏛 Parent Organization</strong>${escHtml(loc.parent_org)}</div>` : ""}
           ${loc.about ? `<div class="popup-section"><strong>ℹ️ About</strong>${escHtml(loc.about)}</div>` : ""}
-          ${loc.services_offered ? `<div class="popup-section"><strong>🛠 Services</strong>${escHtml(loc.services_offered)}</div>` : ""}
+          ${buildServiceDetails(loc)}
           ${loc.locations_served ? `<div class="popup-section"><strong>📌 Areas Served</strong>${escHtml(loc.locations_served)}</div>` : ""}
-          ${loc.days ? `<div class="popup-section"><strong>📅 Distribution Days</strong>${escHtml(loc.days)}</div>` : ""}
-          <div class="popup-actions">
             ${loc.website ? `<a class="popup-button" href="${loc.website}" target="_blank" rel="noopener noreferrer">Visit Website ↗</a>` : ""}
             <a class="popup-button popup-button--directions"
               href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.address)}"
@@ -643,15 +797,32 @@ function escHtml(str) {
 }
 
 // ── Locate user ─────────────────────────────────────────────────
-function locateUser() {
-  map.locate({ setView: true, maxZoom: 13 });
+async function locateByIP() {
+  try {
+    const response = await fetch("https://ipapi.co/json/");
+    if (!response.ok) throw new Error("IP service request failed");
+    const data = await response.json();
+    const lat = parseFloat(data.latitude);
+    const lng = parseFloat(data.longitude);
+    if (!data || Number.isNaN(lat) || Number.isNaN(lng)) {
+      throw new Error("IP location data invalid");
+    }
+    setUserLocation(lat, lng, "📍 Approximate location");
+  } catch (error) {
+    console.error("IP location lookup failed:", error);
+    alert(
+      "Could not determine your approximate location from your IP address. Please enter an address manually."
+    );
+  }
 }
 
-map.on("locationfound", (e) => {
-  centerPoint = e.latlng;
-  document.getElementById("search-location").value = "📍 Current Location";
+function setUserLocation(lat, lng, label) {
+  centerPoint = L.latLng(lat, lng);
+  els.searchLocation.value = label;
   hideSuggestions();
-  if (userMarker) map.removeLayer(userMarker);
+  if (userMarker) {
+    map.removeLayer(userMarker);
+  }
   userMarker = L.marker(centerPoint, {
     icon: L.divIcon({
       className: "",
@@ -669,22 +840,23 @@ map.on("locationfound", (e) => {
         </div>
         <div class="popup-body yah-body">
           <div class="yah-coords">${centerPoint.lat.toFixed(5)}, ${centerPoint.lng.toFixed(5)}</div>
-          <div class="yah-note">Showing results near your location</div>
+          <div class="yah-note">Showing results near your approximate location</div>
         </div>
       </div>
     `, { maxWidth: 220 })
     .openPopup();
+  map.setView(centerPoint, 13);
   applyFilters();
-});
+}
 
-map.on("locationerror", () => {
-  alert("Could not determine your location. Please check your browser permissions.");
-});
+function locateUser() {
+  locateByIP();
+}
 
 // ── Event listeners ────────────────────────────────────────────
 
 // Keyword bar — live filter + org name suggestions
-document.getElementById("search-keyword").addEventListener("input", function () {
+els.searchKeyword.addEventListener("input", function () {
   const val = this.value.trim();
   clearTimeout(keywordDebounce);
 
@@ -704,7 +876,7 @@ document.getElementById("search-keyword").addEventListener("input", function () 
   }, 250);
 });
 
-document.getElementById("search-keyword").addEventListener("keydown", function (e) {
+els.searchKeyword.addEventListener("keydown", function (e) {
   const items = kwDropdown.querySelectorAll(".sugg-item");
   if (!items.length) return;
   if (e.key === "ArrowDown") {
@@ -741,7 +913,7 @@ document.addEventListener("click", (e) => {
 });
 
 // Location bar — live geocode + org suggestions
-document.getElementById("search-location").addEventListener("input", function () {
+els.searchLocation.addEventListener("input", function () {
   const val = this.value.trim();
 
   if (!val) {
@@ -768,7 +940,7 @@ document.getElementById("search-location").addEventListener("input", function ()
   }, 300);
 });
 
-document.getElementById("search-location").addEventListener("keydown", handleLocationKeydown);
+els.searchLocation.addEventListener("keydown", handleLocationKeydown);
 
 // Keep dropdown aligned on resize
 window.addEventListener("resize", () => {
@@ -785,8 +957,8 @@ document.addEventListener("click", (e) => {
   }
 });
 
-document.getElementById("radius").addEventListener("input", function () {
-  document.getElementById("radiusValue").textContent = this.value;
+els.radius.addEventListener("input", function () {
+  els.radiusValue.textContent = this.value;
   applyFilters();
 });
 
