@@ -25,7 +25,7 @@
 
         <!-- Fixed header: title + tab bar -->
         <div class="sidebar-header">
-          <h1>🥦 Santa Clara Food Services Locator</h1>
+          <h1>🥦 Food Services Locator</h1>
           <p>Find food resources near you in Santa Clara County</p>
         </div>
         <div class="tab-bar-wrap">
@@ -58,11 +58,13 @@
                 <span class="search-icon">🗺</span>
                 <input id="search-location" placeholder="Address, City, or ZIP…" autocomplete="off" />
               </div>
-              <button class="btn-locate" onclick="locateUser()">📍 Use My Current Location</button>
+              <button class="btn-locate" onclick="locateUser()">📍 Use Approximate Location</button>
             </div>
 
             <button class="btn-reset" onclick="resetFilters()">✕ Reset All Filters</button>
 
+            
+            
             <!-- ACCORDION: Distance -->
             <div class="accordion">
               <button class="accordion-btn" onclick="toggleAccordion(this)">
@@ -132,6 +134,34 @@
               </button>
               <div class="accordion-body">
                 <div id="parentOrgFilters" class="filter-group"><p style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">Loading organizations…</p></div>
+              </div>
+            </div>
+
+            <!-- ACCORDION: Map Style -->
+            <div class="accordion">
+              <button class="accordion-btn" onclick="toggleAccordion(this)">
+                <span class="acc-label">Map Style</span>
+                <span class="acc-arrow">›</span>
+              </button>
+              <div class="accordion-body">
+                <div class="basemap-options">
+                  <label class="basemap-option">
+                    <input type="radio" name="basemap" value="street" checked onchange="changeBasemap(this.value)" />
+                    <span>Street Map</span>
+                  </label>
+                  <label class="basemap-option">
+                    <input type="radio" name="basemap" value="satellite" onchange="changeBasemap(this.value)" />
+                    <span>Satellite</span>
+                  </label>
+                  <label class="basemap-option">
+                    <input type="radio" name="basemap" value="topo" onchange="changeBasemap(this.value)" />
+                    <span>Topographic</span>
+                  </label>
+                  <label class="basemap-option">
+                    <input type="radio" name="basemap" value="light" onchange="changeBasemap(this.value)" />
+                    <span>Light</span>
+                  </label>
+                </div>
               </div>
             </div>
 
