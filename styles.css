@@ -20,11 +20,17 @@
   --sidebar-w: 360px;
 }
 
+html {
+  font-size: 16px;
+}
+
 html, body {
   height: 100%;
   font-family: "DM Sans", sans-serif;
   background: var(--cream);
   color: var(--text);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 /* ── Layout ── */
@@ -52,16 +58,16 @@ html, body {
 }
 .sidebar-header h1 {
   font-family: "Fraunces", serif;
-  font-size: 1.4rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: var(--white);
   line-height: 1.2;
 }
 .sidebar-header p {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--green-pale);
-  margin-top: 4px;
-  opacity: 0.8;
+  margin-top: 6px;
+  opacity: 0.9;
 }
 
 /* ── Sticky tab bar ── */
@@ -79,12 +85,12 @@ html, body {
 }
 .tab-btn {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
   background: var(--white);
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
   color: var(--text-muted);
@@ -133,12 +139,12 @@ html, body {
 }
 .search-wrap input {
   width: 100%;
-  padding: 10px 14px 10px 38px;
+  padding: 12px 14px 12px 40px;
   border: 1.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--white);
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.97rem;
   color: var(--text);
   transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
@@ -355,6 +361,22 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   cursor: pointer;
 }
 
+.basemap-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.basemap-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+.basemap-option input[type="radio"] {
+  accent-color: var(--green-mid);
+  cursor: pointer;
+}
+
 /* ── Results list ── */
 #resultCount {
   font-size: 0.75rem;
@@ -394,17 +416,17 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 }
 .item-name {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--text);
-  line-height: 1.3;
+  line-height: 1.35;
 }
 .item-addr {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .item-dist {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--green-mid);
   background: var(--green-pale);
@@ -511,10 +533,28 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   padding: 0 !important;
   overflow: hidden;
 }
-.leaflet-popup-content { margin: 0 !important; width: 280px !important; }
+.leaflet-popup-content { 
+  margin: 0 !important; 
+  width: 380px !important; /* Increased from 280px */
+}
 .leaflet-popup-tip-container { margin-top: -1px; }
 
-.popup-card { font-family: "DM Sans", sans-serif; font-size: 0.82rem; }
+.popup-card { 
+  font-family: "DM Sans", sans-serif; 
+  font-size: 0.92rem; 
+  max-height: 520px; /* Add max height */
+  overflow-y: auto; /* Make it scrollable */
+}
+
+/* Add scrollbar styling for popup */
+.popup-card::-webkit-scrollbar { width: 6px; }
+.popup-card::-webkit-scrollbar-thumb { 
+  background: var(--border); 
+  border-radius: 3px; 
+}
+.popup-card::-webkit-scrollbar-track { 
+  background: transparent; 
+}
 .popup-header {
   background: var(--green-deep);
   color: var(--white);
@@ -552,6 +592,32 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 .popup-button:hover { background: var(--green-deep); }
 .popup-button--directions { background: var(--accent); }
 .popup-button--directions:hover { background: #c9522d; }
+
+/* ── Service subheaders inside popup ── */
+.popup-services > strong {
+  margin-bottom: 6px;
+}
+.service-block {
+  margin-bottom: 6px;
+}
+.service-block:last-child {
+  margin-bottom: 0;
+}
+.service-subheader {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--green-deep);
+  border-left: 3px solid var(--green-light);
+  padding-left: 7px;
+  margin: 6px 0 3px;
+  line-height: 1.3;
+}
+.service-detail {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.45;
+  padding-left: 10px;
+}
 
 /* ── You Are Here pin ── */
 .you-are-here-pin {
