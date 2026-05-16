@@ -811,6 +811,7 @@ function renderLocations(data) {
             <strong>📍 Address</strong>${escHtml(loc.address)}
           </div>
           ${loc.phone ? `<div class="popup-section"><strong>📞 Phone</strong>${escHtml(loc.phone)}</div>` : ""}
+          ${loc.org_type ? `<div class="popup-section"><strong>🏷 Organization Type</strong>${escHtml(loc.org_type)}</div>` : ""}
           ${loc.parent_org ? `<div class="popup-section"><strong>🏛 Parent Organization</strong>${escHtml(loc.parent_org)}</div>` : ""}
           ${loc.about ? `<div class="popup-section"><strong>ℹ️ About</strong>${escHtml(loc.about)}</div>` : ""}
           ${buildServiceDetails(loc)}
