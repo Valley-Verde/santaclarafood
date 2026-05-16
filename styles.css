@@ -752,19 +752,24 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 
   /* Tighten header on mobile */
   .sidebar-header {
-    padding: 12px 16px 10px;
+    padding: 10px 14px 8px;
   }
-  .sidebar-header h1 { font-size: 1.2rem; }
-  .sidebar-header p  { font-size: 0.78rem; }
+  .sidebar-header h1 { font-size: 1rem; }
+  .sidebar-header p  { font-size: 0.72rem; }
 
-  /* Larger tap targets */
-  .tab-btn   { padding: 12px 10px; font-size: 0.88rem; }
-  .btn-locate { padding: 12px 14px; font-size: 0.88rem; }
-  .filter-group label { padding: 8px 6px; font-size: 0.88rem; }
-  .accordion-btn { padding: 14px 14px; }
-  .location-item { padding: 12px 14px; }
-  .item-name { font-size: 1rem; }
-  .item-addr { font-size: 0.87rem; }
+  /* Smaller text throughout */
+  .tab-btn   { padding: 9px 8px; font-size: 0.78rem; }
+  .btn-locate { padding: 9px 12px; font-size: 0.78rem; }
+  .btn-reset  { font-size: 0.75rem; }
+  .section-label { font-size: 0.65rem; }
+  .search-wrap input { font-size: 0.85rem; padding: 9px 12px 9px 36px; }
+  .filter-group label { padding: 6px 6px; font-size: 0.8rem; }
+  .accordion-btn { padding: 11px 12px; font-size: 0.78rem; }
+  .location-item { padding: 10px 12px; }
+  .item-name { font-size: 0.88rem; }
+  .item-addr { font-size: 0.78rem; }
+  .radius-hint { font-size: 0.72rem; }
+  .radius-badge { font-size: 0.7rem; }
 
   /* Leaflet popup narrower on small screens */
   .leaflet-popup-content { width: 280px !important; }
