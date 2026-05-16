@@ -24,9 +24,25 @@
       <div class="sidebar">
 
         <!-- Fixed header: title + tab bar -->
+        <div class="drag-handle-wrap" id="dragHandleWrap">
+          <div class="drag-handle"></div>
+        </div>
         <div class="sidebar-header">
-          <h1>🥦 Food Services Locator</h1>
-          <p>Find food resources near you in Santa Clara County</p>
+          <div class="header-row">
+            <div class="header-text">
+              <h1>🥦 Food Services Locator</h1>
+              <p>Find food resources near you in Santa Clara County</p>
+            </div>
+            <button class="btn-fullscreen" onclick="openFullscreen()" title="Open in full screen">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+              <span>Full Screen</span>
+            </button>
+          </div>
         </div>
         <div class="tab-bar-wrap">
           <div class="tab-bar">
@@ -134,6 +150,18 @@
               </button>
               <div class="accordion-body">
                 <div id="parentOrgFilters" class="filter-group"><p style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">Loading organizations…</p></div>
+              </div>
+            </div>
+
+            <!-- ACCORDION: Organization Type -->
+            <div class="accordion">
+              <button class="accordion-btn" onclick="toggleAccordion(this)">
+                <span class="acc-label">Organization Type</span>
+                <span class="acc-badge" id="acc-badge-orgtype"></span>
+                <span class="acc-arrow">›</span>
+              </button>
+              <div class="accordion-body">
+                <div id="orgTypeFilters" class="filter-group"><p style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">Loading types…</p></div>
               </div>
             </div>
 
