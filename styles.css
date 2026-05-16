@@ -652,9 +652,125 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 .yah-coords { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .yah-note { font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
 
+/* ── Fullscreen button ── */
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.header-text { flex: 1; min-width: 0; }
+.btn-fullscreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.12);
+  color: var(--white);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.2s, border-color 0.2s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.btn-fullscreen:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.5);
+}
+.btn-fullscreen svg { flex-shrink: 0; }
+
+/* ── Drag handle (mobile only, hidden on desktop) ── */
+.drag-handle-wrap {
+  display: none;
+  justify-content: center;
+  padding: 8px 0 4px;
+  cursor: grab;
+  flex-shrink: 0;
+  background: var(--cream);
+  border-radius: 20px 20px 0 0;
+}
+.drag-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .container { flex-direction: column; }
-  .sidebar { width: 100%; height: 50vh; border-right: none; border-bottom: 1px solid var(--border); }
-  #map { height: 50vh; }
+  /* Map fills the whole screen behind the sheet */
+  .container {
+    flex-direction: column;
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #map {
+    position: fixed;
+    inset: 0;
+    height: 100vh !important;
+    z-index: 0;
+  }
+
+  /* Bottom sheet */
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 85vh;
+    max-height: 85vh;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 32px rgba(26, 58, 42, 0.18);
+    z-index: 1000;
+    /* Peek just enough to show the drag handle + tab bar (~72px) */
+    transform: translateY(calc(100% - 72px));
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .sidebar.mobile-expanded {
+    transform: translateY(0);
+  }
+
+  /* Show drag handle on mobile */
+  .drag-handle-wrap {
+    display: flex;
+  }
+
+  /* Tighten header on mobile */
+  .sidebar-header {
+    padding: 12px 16px 10px;
+  }
+  .sidebar-header h1 { font-size: 1.2rem; }
+  .sidebar-header p  { font-size: 0.78rem; }
+
+  /* Larger tap targets */
+  .tab-btn   { padding: 12px 10px; font-size: 0.88rem; }
+  .btn-locate { padding: 12px 14px; font-size: 0.88rem; }
+  .filter-group label { padding: 8px 6px; font-size: 0.88rem; }
+  .accordion-btn { padding: 14px 14px; }
+  .location-item { padding: 12px 14px; }
+  .item-name { font-size: 1rem; }
+  .item-addr { font-size: 0.87rem; }
+
+  /* Leaflet popup narrower on small screens */
+  .leaflet-popup-content { width: 280px !important; }
+  .popup-card { max-height: 360px; }
+
+  /* Keep fullscreen button compact on mobile */
+  .btn-fullscreen span { display: none; }
+  .btn-fullscreen { padding: 7px 9px; }
 }
