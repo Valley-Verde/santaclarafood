@@ -9,6 +9,55 @@
 //  never clips it.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── GitHub Pages URL (used by the fullscreen button) ──────────
+// Update this to your actual GitHub Pages URL:
+const GITHUB_PAGES_URL = "https://jsouth-02.github.io/santaclarafood/";
+
+function openFullscreen() {
+  window.open(GITHUB_PAGES_URL, "_blank", "noopener,noreferrer");
+}
+
+// ── Mobile bottom-sheet toggle ─────────────────────────────────
+(function () {
+  const sidebar = document.querySelector(".sidebar");
+  const handle  = document.getElementById("dragHandleWrap");
+  if (!sidebar || !handle) return;
+
+  let startY = 0, startExpanded = false;
+
+  function isMobile() { return window.innerWidth <= 640; }
+
+  handle.addEventListener("click", () => {
+    if (!isMobile()) return;
+    sidebar.classList.toggle("mobile-expanded");
+  });
+
+  // Also expand when user taps the tab bar
+  document.querySelector(".tab-bar-wrap").addEventListener("click", () => {
+    if (!isMobile()) return;
+    sidebar.classList.add("mobile-expanded");
+  });
+
+  // Collapse the sheet when a map result is opened
+  window.__collapseSheet = function () {
+    if (isMobile()) sidebar.classList.remove("mobile-expanded");
+  };
+
+  // Basic touch-drag support
+  handle.addEventListener("touchstart", (e) => {
+    startY = e.touches[0].clientY;
+    startExpanded = sidebar.classList.contains("mobile-expanded");
+  }, { passive: true });
+
+  handle.addEventListener("touchend", (e) => {
+    if (!isMobile()) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy < -30)       sidebar.classList.add("mobile-expanded");
+    else if (dy > 30)   sidebar.classList.remove("mobile-expanded");
+  }, { passive: true });
+})();
+
+
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5x10jBXIWGB479G39llMNUZEGZwUqg92A4XjhdVaPdPmnhBijcCGUqtt7jVy4UCCBfoCtnYEl2VEv/pub?gid=431341540&single=true&output=csv";
 
@@ -175,6 +224,7 @@ Papa.parse(SHEET_URL, {
         locations_served: (r.Locations_Served || "").toLowerCase().trim(),
         locations_served_raw: (r.Locations_Served || "").trim(),
         parent_org: (r.Parent_Organization || "").trim(),
+        org_type: (r.Organization_Type || "").trim(),
         rawRow: r,  // keep entire row for per-service column lookups
       }))
       .filter((l) => !isNaN(l.lat) && !isNaN(l.lng));
@@ -184,6 +234,7 @@ Papa.parse(SHEET_URL, {
     buildServiceFilters();
     buildAreasFilter();
     buildParentOrgFilter();
+    buildOrgTypeFilter();
     applyFilters();
   },
   error(err) {
@@ -314,6 +365,16 @@ function buildParentOrgFilter() {
       .map((v) => v.trim())
   );
   buildCheckboxGroup("parentOrgFilters", values, "parentOrgFilter");
+}
+
+function buildOrgTypeFilter() {
+  const values = uniqueValues(
+    locations
+      .map((l) => l.org_type)
+      .filter(Boolean)
+      .map((v) => v.trim())
+  );
+  buildCheckboxGroup("orgTypeFilters", values, "orgTypeFilter");
 }
 
 // ── Suggestions helpers ────────────────────────────────────────
@@ -574,6 +635,14 @@ function updateAccordionBadges() {
     parentBadge.classList.toggle("visible", parentCount > 0);
   }
 
+  // Organization Type
+  const orgTypeCount = document.querySelectorAll(".orgTypeFilter:checked").length;
+  const orgTypeBadge = document.getElementById("acc-badge-orgtype");
+  if (orgTypeBadge) {
+    orgTypeBadge.textContent = orgTypeCount || "";
+    orgTypeBadge.classList.toggle("visible", orgTypeCount > 0);
+  }
+
   // Radius
   const radius = parseFloat(document.getElementById("radius").value);
   const radBadge = document.getElementById("acc-badge-radius");
@@ -589,6 +658,7 @@ function applyFilters() {
   const checkedDays = [...document.querySelectorAll(".dayFilter:checked")].map((cb) => cb.value);
   const checkedLocs = [...document.querySelectorAll(".locationFilter:checked")].map((cb) => cb.value);
   const checkedParents = [...document.querySelectorAll(".parentOrgFilter:checked")].map((cb) => cb.value);
+  const checkedOrgTypes = [...document.querySelectorAll(".orgTypeFilter:checked")].map((cb) => cb.value);
 
   let filtered = locations.filter((l) => {
     if (
@@ -615,6 +685,9 @@ function applyFilters() {
       return false;
 
     if (checkedParents.length && !checkedParents.some((p) => l.parent_org.trim().toLowerCase() === p.trim().toLowerCase()))
+      return false;
+
+    if (checkedOrgTypes.length && !checkedOrgTypes.some((t) => l.org_type.trim().toLowerCase() === t.trim().toLowerCase()))
       return false;
 
     if (centerPoint && radius > 0) {
@@ -649,7 +722,7 @@ function resetFilters() {
   els.searchLocation.value = "";
   els.radius.value = 0;
   els.radiusValue.textContent = 0;
-  document.querySelectorAll(".service-filter, .dayFilter, .locationFilter, .parentOrgFilter").forEach((cb) => (cb.checked = false));
+  document.querySelectorAll(".service-filter, .dayFilter, .locationFilter, .parentOrgFilter, .orgTypeFilter").forEach((cb) => (cb.checked = false));
   centerPoint = null;
   hideSuggestions();
   hideKeywordSuggestions();
@@ -770,6 +843,7 @@ function renderLocations(data) {
 
     marker.on("click", () => {
       switchTab("results");
+      if (window.__collapseSheet) window.__collapseSheet();
       document.querySelectorAll(".location-item").forEach((i) => i.classList.remove("active"));
       div.classList.add("active");
       div.scrollIntoView({ behavior: "smooth", block: "nearest" });
