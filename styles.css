@@ -704,14 +704,24 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   border-radius: 2px;
 }
 
+/* ── Interaction hint (mobile only, hidden on desktop) ── */
+.interact-hint { display: none; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  /* Map fills the whole screen behind the sheet */
+  /* Outline the widget so it reads as a contained element on the Wix page */
+  html, body { background: transparent; }
   .container {
     flex-direction: column;
     position: relative;
-    height: 100vh;
+    height: 100%;
+    min-height: 100vh;
     overflow: hidden;
+    border: 2px solid var(--green-mid);
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgba(45, 106, 79, 0.12),
+      0 8px 32px rgba(26, 58, 42, 0.18);
   }
 
   #map {
@@ -719,6 +729,7 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
     inset: 0;
     height: 100vh !important;
     z-index: 0;
+    border-radius: 14px;
   }
 
   /* Bottom sheet */
@@ -731,12 +742,12 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
     height: 85vh;
     max-height: 85vh;
     border-right: none;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--green-mid);
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -6px 32px rgba(26, 58, 42, 0.18);
+    box-shadow: 0 -6px 32px rgba(26, 58, 42, 0.22);
     z-index: 1000;
-    /* Peek just enough to show the drag handle + tab bar (~72px) */
-    transform: translateY(calc(100% - 72px));
+    /* Peek enough to show hint + drag handle + tab bar (~90px) */
+    transform: translateY(calc(100% - 90px));
     transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
@@ -748,7 +759,32 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   /* Show drag handle on mobile */
   .drag-handle-wrap {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
   }
+
+  /* Bolder drag handle — clear swipe affordance */
+  .drag-handle {
+    width: 44px;
+    height: 5px;
+    background: var(--green-light);
+    border-radius: 3px;
+  }
+
+  /* "Swipe up" nudge shown in the peek strip */
+  .interact-hint {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--green-mid);
+    padding-bottom: 2px;
+    opacity: 0.9;
+  }
+  /* Hide once expanded so it doesn't crowd the header */
+  .sidebar.mobile-expanded .interact-hint { display: none; }
 
   /* Tighten header on mobile */
   .sidebar-header {
