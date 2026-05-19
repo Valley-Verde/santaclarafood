@@ -59,7 +59,7 @@ function openFullscreen() {
 
 
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5x10jBXIWGB479G39llMNUZEGZwUqg92A4XjhdVaPdPmnhBijcCGUqtt7jVy4UCCBfoCtnYEl2VEv/pub?gid=431341540&single=true&output=csv";
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5x10jBXIWGB479G39llMNUZEGZwUqg92A4XjhdVaPdPmnhBijcCGUqtt7jVy4UCCBfoCtnYEl2VEv/pub?gid=46344147&single=true&output=csv";
 
 // ── Map setup ──────────────────────────────────────────────────
 const map = L.map("map", { maxZoom: 18 }).setView([37.328928, -121.911259], 11);
@@ -152,6 +152,7 @@ async function nominatimGeocode(query) {
 
 // ── State ──────────────────────────────────────────────────────
 let locations = [];
+let otherResources = [];
 let allFields = [];   // all CSV column headers, used for service detail lookup
 let markers = [];
 let centerPoint = null;
@@ -209,25 +210,27 @@ Papa.parse(SHEET_URL, {
   skipEmptyLines: true,
   complete(results) {
     allFields = results.meta.fields || [];
-    locations = results.data
-      .map((r) => ({
-        name: (r.Organization_Name || "").trim(),
-        address: (r.Address || "").trim(),
-        city: (r.City || "").trim(),
-        phone: (r.Phone_Number || "").trim(),
-        lat: parseFloat(r.Latitude),
-        lng: parseFloat(r.Longitude),
-        about: (r.About || "").trim(),
-        website: (r.Website || "").trim(),
-        services_offered: (r.Services_Offered || "").toLowerCase().trim(),
-        services_offered_raw: (r.Services_Offered || "").trim(),
-        locations_served: (r.Locations_Served || "").toLowerCase().trim(),
-        locations_served_raw: (r.Locations_Served || "").trim(),
-        parent_org: (r.Parent_Organization || "").trim(),
-        org_type: (r.Organization_Type || "").trim(),
-        rawRow: r,  // keep entire row for per-service column lookups
-      }))
-      .filter((l) => !isNaN(l.lat) && !isNaN(l.lng));
+
+    const parsedRows = results.data.map((r) => ({
+      name: (r.Organization_Name || "").trim(),
+      address: (r.Address || "").trim(),
+      lat: parseFloat(r.Latitude),
+      lng: parseFloat(r.Longitude),
+      about: (r.About || "").trim(),
+      website: (r.Website || "").trim(),
+      phone: (r.Phone_Number || "").trim(),
+      services_offered: (r.Services_Offered || "").toLowerCase().trim(),
+      services_offered_raw: (r.Services_Offered || "").trim(),
+      org_type: (r.Organization_Type || "").trim(),
+      parent_org: (r.Parent_Organization || "").trim(),
+      locations_served: (r.Locations_Served || "").toLowerCase().trim(),
+      locations_served_raw: (r.Locations_Served || "").trim(),
+      rawRow: r,
+    }));
+
+    locations = parsedRows.filter((l) => !isNaN(l.lat) && !isNaN(l.lng));
+    otherResources = parsedRows.filter((l) => isNaN(l.lat) || isNaN(l.lng));
+
     locations.forEach((l) => {
       l.serviceDays = getServiceDays(l);
     });
@@ -235,6 +238,7 @@ Papa.parse(SHEET_URL, {
     buildAreasFilter();
     buildParentOrgFilter();
     buildOrgTypeFilter();
+    buildOtherResourcesPanel();
     applyFilters();
   },
   error(err) {
@@ -375,6 +379,111 @@ function buildOrgTypeFilter() {
       .map((v) => v.trim())
   );
   buildCheckboxGroup("orgTypeFilters", values, "orgTypeFilter");
+}
+
+function buildOtherResourcesPanel() {
+  const list = document.getElementById("otherResourcesList");
+  const badge = document.getElementById("otherResourcesBadge");
+  if (!list || !badge) return;
+  badge.textContent = otherResources.length;
+
+  if (!otherResources.length) {
+    list.innerHTML = '<div class="other-resource-empty">No other resources available.</div>';
+    return;
+  }
+
+  renderFilteredOtherResources(otherResources);
+}
+
+function renderFilteredOtherResources(filtered) {
+  const list = document.getElementById("otherResourcesList");
+  if (!list) return;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="other-resource-empty">No resources match your search.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered
+    .map((resource) => {
+      const title = resource.name || resource.about || "Other resource";
+      const subtitle =
+        resource.parent_org ||
+        resource.org_type ||
+        resource.locations_served ||
+        resource.address ||
+        "";
+      const actualIndex = otherResources.indexOf(resource);
+      return `
+        <button type="button" class="other-resource-item" data-index="${actualIndex}">
+          <span class="other-resource-title">${escHtml(title)}</span>
+          ${subtitle ? `<span class="other-resource-meta">${escHtml(subtitle)}</span>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function filterOtherResources(searchTerm) {
+  const normalized = searchTerm.toLowerCase().trim();
+  if (!normalized) {
+    renderFilteredOtherResources(otherResources);
+    return;
+  }
+
+  const filtered = otherResources.filter((resource) => {
+    const name = (resource.name || "").toLowerCase();
+    const about = (resource.about || "").toLowerCase();
+    const address = (resource.address || "").toLowerCase();
+    const org = (resource.parent_org || "").toLowerCase();
+    return (
+      name.includes(normalized) ||
+      about.includes(normalized) ||
+      address.includes(normalized) ||
+      org.includes(normalized)
+    );
+  });
+
+  renderFilteredOtherResources(filtered);
+}
+
+function showOtherResourceDetails(index) {
+  const details = document.getElementById("otherResourcesDetails");
+  if (!details) return;
+  const resource = otherResources[Number(index)];
+  if (!resource) {
+    details.innerHTML = "";
+    return;
+  }
+
+  const websiteMarkup = resource.website
+    ? `<a href="${escHtml(resource.website)}" target="_blank" rel="noopener noreferrer">Visit website</a>`
+    : "";
+  const phoneMarkup = resource.phone
+    ? `<a href="tel:${encodeURIComponent(resource.phone)}">Call ${escHtml(resource.phone)}</a>`
+    : "";
+
+  details.innerHTML = `
+    <div class="other-resources-card">
+      <strong>${escHtml(resource.name || "Other resource")}</strong>
+      ${resource.about ? `<p>${escHtml(resource.about)}</p>` : ""}
+      ${resource.address ? `<p>${escHtml(resource.address)}</p>` : ""}
+      ${resource.parent_org ? `<p><strong>Organization:</strong> ${escHtml(resource.parent_org)}</p>` : ""}
+      <div class="popup-actions">${websiteMarkup}${phoneMarkup}</div>
+    </div>
+  `;
+}
+
+function setOtherResourcesPanelOpen(isOpen) {
+  const panel = document.getElementById("otherResourcesPanel");
+  const toggle = document.getElementById("otherResourcesToggle");
+  if (!panel || !toggle) return;
+  panel.hidden = !isOpen;
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  if (!isOpen) {
+    const details = document.getElementById("otherResourcesDetails");
+    if (details) details.innerHTML = "";
+  }
 }
 
 // ── Suggestions helpers ────────────────────────────────────────
@@ -1036,6 +1145,47 @@ els.radius.addEventListener("input", function () {
   els.radiusValue.textContent = this.value;
   applyFilters();
 });
+
+const otherResourcesToggle = document.getElementById("otherResourcesToggle");
+const otherResourcesClose = document.getElementById("otherResourcesClose");
+const otherResourcesList = document.getElementById("otherResourcesList");
+
+if (otherResourcesToggle) {
+  otherResourcesToggle.addEventListener("click", () => {
+    const panel = document.getElementById("otherResourcesPanel");
+    if (!panel) return;
+    setOtherResourcesPanelOpen(panel.hidden);
+  });
+}
+
+if (otherResourcesClose) {
+  otherResourcesClose.addEventListener("click", () => setOtherResourcesPanelOpen(false));
+}
+
+if (otherResourcesList) {
+  otherResourcesList.addEventListener("click", (event) => {
+    const item = event.target.closest(".other-resource-item");
+    if (!item) return;
+    showOtherResourceDetails(item.dataset.index);
+  });
+}
+
+document.addEventListener("click", (event) => {
+  const overlay = document.getElementById("otherResourcesOverlay");
+  const panel = document.getElementById("otherResourcesPanel");
+  if (!overlay || !panel || panel.hidden) return;
+  if (!event.target.closest("#otherResourcesOverlay")) {
+    setOtherResourcesPanelOpen(false);
+  }
+});
+
+// Other resources search input
+const otherResourcesSearch = document.getElementById("otherResourcesSearch");
+if (otherResourcesSearch) {
+  otherResourcesSearch.addEventListener("input", (e) => {
+    filterOtherResources(e.target.value);
+  });
+}
 
 // Static filters (day + area) — service filters get listeners in buildServiceFilters()
 document
