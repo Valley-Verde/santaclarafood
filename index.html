@@ -4,6 +4,13 @@
     <title>Food Services Locator</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="google" content="notranslate" />
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+      }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -210,6 +217,25 @@
       <!-- /sidebar -->
 
       <div id="map"></div>
+      <div id="otherResourcesOverlay" class="other-resources-overlay" aria-live="polite">
+        <button id="otherResourcesToggle" class="other-resources-toggle" type="button" aria-expanded="false">
+          <span>Other Resources</span>
+          <span id="otherResourcesBadge" class="other-resources-badge">0</span>
+          <span class="dropdown-arrow">▾</span>
+        </button>
+        <div id="otherResourcesPanel" class="other-resources-panel" hidden>
+          <div class="other-resources-panel-header">
+            <span translate="yes">Other Resources</span>
+            <button id="otherResourcesClose" class="other-resources-close" type="button" aria-label="Close">×</button>
+          </div>
+          <div class="other-resources-search-wrap">
+            <input type="text" id="otherResourcesSearch" placeholder="Search resources…" class="other-resources-search" translate="yes" />
+          </div>
+          <div id="otherResourcesList" class="other-resources-list" translate="yes">Loading resources…</div>
+          <div id="otherResourcesDetails" class="other-resources-details" translate="yes"></div>
+        </div>
+      </div>
+      <div class="accreditation-badge">Created by: Valley Verde Project</div>
     </div>
 
     <script src="script.js"></script>
