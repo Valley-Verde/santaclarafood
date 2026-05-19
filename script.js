@@ -11,7 +11,7 @@
 
 // ── GitHub Pages URL (used by the fullscreen button) ──────────
 // Update this to your actual GitHub Pages URL:
-const GITHUB_PAGES_URL = "https://jsouth-02.github.io/santaclarafood/";
+const GITHUB_PAGES_URL = "https://valley-verde.github.io/santaclarafood/";
 
 function openFullscreen() {
   window.open(GITHUB_PAGES_URL, "_blank", "noopener,noreferrer");
