@@ -114,10 +114,6 @@ function setBasemap(style = "street") {
   }).addTo(map);
 }
 
-function changeBasemap(style) {
-  setBasemap(style);
-}
-
 setBasemap("street");
 
 
@@ -406,8 +402,9 @@ function renderFilteredOtherResources(filtered) {
 
   list.innerHTML = filtered
     .map((resource) => {
-      const title = resource.name || resource.about || "Other resource";
+      const title = resource.name;
       const subtitle =
+        resource.services_offered_raw ||
         resource.parent_org ||
         resource.org_type ||
         resource.locations_served ||
@@ -436,11 +433,21 @@ function filterOtherResources(searchTerm) {
     const about = (resource.about || "").toLowerCase();
     const address = (resource.address || "").toLowerCase();
     const org = (resource.parent_org || "").toLowerCase();
+    const type = (resource.org_type || "").toLowerCase();
+    const served = (resource.locations_served_raw || "").toLowerCase();
+    const website = (resource.website || "").toLowerCase();
+    const phone = (resource.phone || "").toLowerCase();
+    const services = (resource.services_offered_raw || "").toLowerCase();
     return (
       name.includes(normalized) ||
       about.includes(normalized) ||
       address.includes(normalized) ||
-      org.includes(normalized)
+      org.includes(normalized) ||
+      type.includes(normalized) ||
+      served.includes(normalized) ||
+      website.includes(normalized) ||
+      phone.includes(normalized) ||
+      services.includes(normalized)
     );
   });
 
@@ -464,12 +471,19 @@ function showOtherResourceDetails(index) {
     : "";
 
   details.innerHTML = `
-    <div class="other-resources-card">
-      <strong>${escHtml(resource.name || "Other resource")}</strong>
-      ${resource.about ? `<p>${escHtml(resource.about)}</p>` : ""}
-      ${resource.address ? `<p>${escHtml(resource.address)}</p>` : ""}
-      ${resource.parent_org ? `<p><strong>Organization:</strong> ${escHtml(resource.parent_org)}</p>` : ""}
-      <div class="popup-actions">${websiteMarkup}${phoneMarkup}</div>
+    <div class="popup-card other-resources-card">
+      <div class="popup-header">
+        <div class="popup-title">${escHtml(resource.name || "Other resource")}</div>
+      </div>
+      <div class="popup-body">
+        ${resource.about ? `<div class="popup-section"><strong>About</strong><p>${escHtml(resource.about)}</p></div>` : ""}
+        ${resource.address ? `<div class="popup-section"><strong>Address</strong><p>${escHtml(resource.address)}</p></div>` : ""}
+        ${resource.parent_org && resource.parent_org.toLowerCase() !== "n/a" ? `<div class="popup-section"><strong>Organization</strong><p>${escHtml(resource.parent_org)}</p></div>` : ""}
+        ${resource.org_type ? `<div class="popup-section"><strong>Type</strong><p>${escHtml(resource.org_type)}</p></div>` : ""}
+        ${resource.locations_served_raw ? `<div class="popup-section"><strong>Areas Served</strong><p>${escHtml(resource.locations_served_raw)}</p></div>` : ""}
+        ${buildServiceDetails(resource)}
+        <div class="popup-section other-resources-links">${websiteMarkup}${phoneMarkup}</div>
+      </div>
     </div>
   `;
 }
@@ -479,6 +493,7 @@ function setOtherResourcesPanelOpen(isOpen) {
   const toggle = document.getElementById("otherResourcesToggle");
   if (!panel || !toggle) return;
   panel.hidden = !isOpen;
+  panel.classList.toggle("is-hidden", !isOpen);
   toggle.setAttribute("aria-expanded", String(isOpen));
   if (!isOpen) {
     const details = document.getElementById("otherResourcesDetails");
@@ -774,7 +789,14 @@ function applyFilters() {
       term &&
       !l.name.toLowerCase().includes(term) &&
       !l.address.toLowerCase().includes(term) &&
-      !l.about.toLowerCase().includes(term)
+      !l.about.toLowerCase().includes(term) &&
+      !l.org_type.toLowerCase().includes(term) &&
+      !l.parent_org.toLowerCase().includes(term) &&
+      !l.locations_served.toLowerCase().includes(term) &&
+      !l.services_offered.toLowerCase().includes(term) &&
+      !l.services_offered_raw.toLowerCase().includes(term) &&
+      !l.phone.toLowerCase().includes(term) &&
+      !l.website.toLowerCase().includes(term)
     )
       return false;
 
@@ -921,10 +943,10 @@ function renderLocations(data) {
           </div>
           ${loc.phone ? `<div class="popup-section"><strong>📞 Phone</strong>${escHtml(loc.phone)}</div>` : ""}
           ${loc.org_type ? `<div class="popup-section"><strong>🏷 Organization Type</strong>${escHtml(loc.org_type)}</div>` : ""}
-          ${loc.parent_org ? `<div class="popup-section"><strong>🏛 Parent Organization</strong>${escHtml(loc.parent_org)}</div>` : ""}
+          ${loc.parent_org && loc.parent_org.toLowerCase() !== "n/a" ? `<div class="popup-section"><strong>🏛 Parent Organization</strong>${escHtml(loc.parent_org)}</div>` : ""}
           ${loc.about ? `<div class="popup-section"><strong>ℹ️ About</strong>${escHtml(loc.about)}</div>` : ""}
           ${buildServiceDetails(loc)}
-          ${loc.locations_served ? `<div class="popup-section"><strong>📌 Areas Served</strong>${escHtml(loc.locations_served)}</div>` : ""}
+          ${loc.locations_served_raw ? `<div class="popup-section"><strong>📌 Areas Served</strong>${escHtml(loc.locations_served_raw)}</div>` : ""}
             ${loc.website ? `<a class="popup-button" href="${loc.website}" target="_blank" rel="noopener noreferrer">Visit Website ↗</a>` : ""}
             <a class="popup-button popup-button--directions"
               href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.address)}"
@@ -1150,11 +1172,12 @@ const otherResourcesToggle = document.getElementById("otherResourcesToggle");
 const otherResourcesClose = document.getElementById("otherResourcesClose");
 const otherResourcesList = document.getElementById("otherResourcesList");
 
+// ── Other Resources toggle & close ──────────────────────────────
 if (otherResourcesToggle) {
   otherResourcesToggle.addEventListener("click", () => {
     const panel = document.getElementById("otherResourcesPanel");
     if (!panel) return;
-    setOtherResourcesPanelOpen(panel.hidden);
+    setOtherResourcesPanelOpen(panel.hidden); // hidden=true → open; hidden=false → close
   });
 }
 
@@ -1170,12 +1193,42 @@ if (otherResourcesList) {
   });
 }
 
+// Close other resources when clicking outside the overlay
 document.addEventListener("click", (event) => {
-  const overlay = document.getElementById("otherResourcesOverlay");
   const panel = document.getElementById("otherResourcesPanel");
-  if (!overlay || !panel || panel.hidden) return;
+  if (!panel || panel.hidden) return;
   if (!event.target.closest("#otherResourcesOverlay")) {
     setOtherResourcesPanelOpen(false);
+  }
+});
+
+// ── Mobile map style toggle ──────────────────────────────────────
+const mobileMapStyleToggle = document.getElementById("mobileMapStyleToggle");
+const mobileMapStylePanel = document.getElementById("mobileMapStylePanel");
+if (mobileMapStyleToggle && mobileMapStylePanel) {
+  mobileMapStyleToggle.addEventListener("click", () => {
+    const isHidden = mobileMapStylePanel.hidden;
+    mobileMapStylePanel.hidden = !isHidden;
+    mobileMapStylePanel.classList.toggle("is-hidden", !isHidden);
+    mobileMapStyleToggle.setAttribute("aria-expanded", String(isHidden));
+  });
+  mobileMapStylePanel.addEventListener("click", (event) => {
+    const btn = event.target.closest(".mobile-mapstyle-option");
+    if (!btn) return;
+    setBasemap(btn.dataset.value);
+    mobileMapStylePanel.hidden = true;
+    mobileMapStylePanel.classList.add("is-hidden");
+    mobileMapStyleToggle.setAttribute("aria-expanded", "false");
+  });
+}
+
+// Close map style panel when clicking outside it
+document.addEventListener("click", (event) => {
+  if (!mobileMapStylePanel || mobileMapStylePanel.hidden) return;
+  if (!event.target.closest("#mobileMapStyleControl")) {
+    mobileMapStylePanel.hidden = true;
+    mobileMapStylePanel.classList.add("is-hidden");
+    if (mobileMapStyleToggle) mobileMapStyleToggle.setAttribute("aria-expanded", "false");
   }
 });
 
