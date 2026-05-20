@@ -916,9 +916,9 @@ Remove or comment out the two lines below to display these accordians */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex-shrink: 0;
-  padding: 8px 12px;
+  padding: 6px 6px;
   background: rgba(255,255,255,0.12);
   color: var(--white);
   border: 1.5px solid rgba(255,255,255,0.25);
@@ -1069,10 +1069,11 @@ Remove or comment out the two lines below to display these accordians */
 
   /* Other resources panel adjustments */
   .map-style-accordion { display: none !important; }
-  .other-resources-overlay { top: auto; bottom: 80px; right: 16px; left: auto; }
+  .other-resources-overlay { top: 16px; right: 16px; }
   .other-resources-panel { width: calc(100vw - 32px); max-width: 420px; }
   .other-resources-list { max-height: 220px; }
   .other-resources-details { max-height: calc(82vh - 310px); }
+  .mobile-mapstyle-control { top: 72px; bottom: auto; right: 16px; }
   .leaflet-popup-content { width: min(90vw, 340px) !important; }
   .leaflet-popup-content-wrapper { max-height: 80vh !important; }
 }
