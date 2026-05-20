@@ -448,6 +448,15 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 /* ── Map ── */
 #map { flex: 1; }
 
+/* Ensure [hidden] always overrides explicit display rules (e.g. display:flex on panels) */
+[hidden],
+.is-hidden { display: none !important; }
+
+/* ── Hidden accordions (functionality preserved for future use) ── 
+Remove or comment out the two lines below to display these accordians */
+#mapStyleAccordion { display: none !important; }
+#panel-filters > .accordion:nth-child(9) { display: none !important; } /* Areas Served */
+
 /* ── Other resources overlay ── */
 .other-resources-overlay {
   position: fixed;
@@ -502,6 +511,9 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   border-radius: 16px;
   box-shadow: 0 18px 48px rgba(26, 58, 42, 0.16);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
 }
 .other-resources-panel-header {
   display: flex;
@@ -544,6 +556,7 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   overflow-y: auto;
   display: grid;
   gap: 0;
+  border-bottom: 1px solid var(--border);
 }
 .other-resource-item {
   width: 100%;
@@ -573,10 +586,13 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   color: var(--text-muted);
 }
 .other-resources-details {
-  padding: 12px 14px 16px;
+  padding: 14px 14px 16px;
   color: var(--text);
   font-size: 0.95rem;
   line-height: 1.5;
+  max-height: calc(82vh - 360px);
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
 }
 .other-resources-details a {
   color: var(--green-deep);
@@ -590,15 +606,68 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
 /* ── Accreditation badge ── */
 .accreditation-badge {
   position: fixed;
-  bottom: 8px;
-  left: 8px;
-  font-size: 0.75rem;
-  color: rgba(26, 58, 42, 0.5);
+  bottom: 5px;
+  left: 12px;
+  font-size: 0.65rem;
+  color: rgba(26, 58, 42, 0.7);
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(200,221,192,0.7);
+  border-radius: 10px;
   font-style: italic;
   pointer-events: none;
   z-index: 900;
-  padding: 2px 6px;
+  padding: 2px 8px;
 }
+
+.mobile-mapstyle-control {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  z-index: 1200;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.mobile-mapstyle-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--green-deep);
+  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(26, 58, 42, 0.16);
+}
+.mobile-mapstyle-panel {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(26, 58, 42, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.mobile-mapstyle-option {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 12px 14px;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.mobile-mapstyle-option:hover,
+.mobile-mapstyle-option:focus {
+  background: var(--green-pale);
+}
+
 
 /* ── Custom location pin ── */
 .loc-pin {
@@ -697,6 +766,36 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   font-size: 0.92rem; 
   max-height: 520px; /* Add max height */
   overflow-y: auto; /* Make it scrollable */
+}
+.other-resources-card {
+  padding: 0;
+}
+.other-resources-card .popup-body {
+  padding: 12px 14px 16px;
+}
+.other-resources-card .popup-section {
+  margin-bottom: 12px;
+}
+.other-resources-card .popup-section:last-child {
+  margin-bottom: 0;
+}
+.other-resources-card .popup-section p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+.other-resources-card a {
+  color: var(--green-deep);
+  text-decoration: underline;
+}
+.other-resources-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.other-resources-links a {
+  display: inline-block;
 }
 
 /* Add scrollbar styling for popup */
@@ -811,46 +910,6 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-}
-.other-resources-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.other-resources-select {
-  min-width: 170px;
-  padding: 9px 10px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--white);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.92rem;
-  line-height: 1.4;
-}
-.other-resources-info {
-  margin: 16px 0 0;
-  padding: 14px 16px;
-  background: rgba(255,255,255,0.95);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-.other-resources-card {
-  display: grid;
-  gap: 10px;
-}
-.other-resources-card strong {
-  font-size: 1rem;
-}
-.other-resources-card p {
-  margin: 0;
-}
-.other-resources-card a {
-  color: var(--green-deep);
-  text-decoration: underline;
 }
 .header-text { flex: 1; min-width: 0; }
 .btn-fullscreen {
@@ -1007,4 +1066,13 @@ input[type="range"]::-webkit-slider-thumb:hover { background: var(--green-deep);
   /* Keep fullscreen button compact on mobile */
   .btn-fullscreen span { display: none; }
   .btn-fullscreen { padding: 7px 9px; }
+
+  /* Other resources panel adjustments */
+  .map-style-accordion { display: none !important; }
+  .other-resources-overlay { top: auto; bottom: 80px; right: 16px; left: auto; }
+  .other-resources-panel { width: calc(100vw - 32px); max-width: 420px; }
+  .other-resources-list { max-height: 220px; }
+  .other-resources-details { max-height: calc(82vh - 310px); }
+  .leaflet-popup-content { width: min(90vw, 340px) !important; }
+  .leaflet-popup-content-wrapper { max-height: 80vh !important; }
 }
