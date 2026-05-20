@@ -137,18 +137,6 @@
               </div>
             </div>
 
-            <!-- ACCORDION: Areas Served -->
-            <div class="accordion">
-              <button class="accordion-btn" onclick="toggleAccordion(this)">
-                <span class="acc-label">Areas Served</span>
-                <span class="acc-badge" id="acc-badge-areas"></span>
-                <span class="acc-arrow">›</span>
-              </button>
-              <div class="accordion-body">
-                <div id="areasFilters" class="filter-group"><p style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">Loading areas…</p></div>
-              </div>
-            </div>
-
             <!-- ACCORDION: Parent Organization -->
             <div class="accordion">
               <button class="accordion-btn" onclick="toggleAccordion(this)">
@@ -173,8 +161,21 @@
               </div>
             </div>
 
-            <!-- ACCORDION: Map Style -->
+            
+            <!-- ACCORDION: Areas Served -->
             <div class="accordion">
+              <button class="accordion-btn" onclick="toggleAccordion(this)">
+                <span class="acc-label">Areas Served</span>
+                <span class="acc-badge" id="acc-badge-areas"></span>
+                <span class="acc-arrow">›</span>
+              </button>
+              <div class="accordion-body">
+                <div id="areasFilters" class="filter-group"><p style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">Loading areas…</p></div>
+              </div>
+            </div>
+
+            <!-- ACCORDION: Map Style -->
+            <div id="mapStyleAccordion" class="accordion map-style-accordion">
               <button class="accordion-btn" onclick="toggleAccordion(this)">
                 <span class="acc-label">Map Style</span>
                 <span class="acc-arrow">›</span>
@@ -182,19 +183,19 @@
               <div class="accordion-body">
                 <div class="basemap-options">
                   <label class="basemap-option">
-                    <input type="radio" name="basemap" value="street" checked onchange="changeBasemap(this.value)" />
+                    <input type="radio" name="basemap" value="street" checked onchange="setBasemap(this.value)" />
                     <span>Street Map</span>
                   </label>
                   <label class="basemap-option">
-                    <input type="radio" name="basemap" value="satellite" onchange="changeBasemap(this.value)" />
+                    <input type="radio" name="basemap" value="satellite" onchange="setBasemap(this.value)" />
                     <span>Satellite</span>
                   </label>
                   <label class="basemap-option">
-                    <input type="radio" name="basemap" value="topo" onchange="changeBasemap(this.value)" />
+                    <input type="radio" name="basemap" value="topo" onchange="setBasemap(this.value)" />
                     <span>Topographic</span>
                   </label>
                   <label class="basemap-option">
-                    <input type="radio" name="basemap" value="light" onchange="changeBasemap(this.value)" />
+                    <input type="radio" name="basemap" value="light" onchange="setBasemap(this.value)" />
                     <span>Light</span>
                   </label>
                 </div>
@@ -217,6 +218,7 @@
       <!-- /sidebar -->
 
       <div id="map"></div>
+      
       <div id="otherResourcesOverlay" class="other-resources-overlay" aria-live="polite">
         <button id="otherResourcesToggle" class="other-resources-toggle" type="button" aria-expanded="false">
           <span>Other Resources</span>
@@ -232,10 +234,21 @@
             <input type="text" id="otherResourcesSearch" placeholder="Search resources…" class="other-resources-search" translate="yes" />
           </div>
           <div id="otherResourcesList" class="other-resources-list" translate="yes">Loading resources…</div>
-          <div id="otherResourcesDetails" class="other-resources-details" translate="yes"></div>
+          <div class="other-resources-details" id="otherResourcesDetails" translate="yes"></div>
         </div>
       </div>
-      <div class="accreditation-badge">Created by: Valley Verde Project</div>
+
+      <div id="mobileMapStyleControl" class="mobile-mapstyle-control" aria-hidden="true">
+        <button id="mobileMapStyleToggle" class="mobile-mapstyle-toggle" type="button" aria-expanded="false" aria-label="Map Style">🗺</button>
+        <div id="mobileMapStylePanel" class="mobile-mapstyle-panel" hidden>
+          <button type="button" class="mobile-mapstyle-option" data-value="street">Street</button>
+          <button type="button" class="mobile-mapstyle-option" data-value="satellite">Satellite</button>
+          <button type="button" class="mobile-mapstyle-option" data-value="topo">Topographic</button>
+          <button type="button" class="mobile-mapstyle-option" data-value="light">Light</button>
+        </div>
+      </div>
+
+      <div class="accreditation-badge" translate="yes">Created by: Jaden Southern in Collaboration with Valley Verde</div>
     </div>
 
     <script src="script.js"></script>
